@@ -23,7 +23,7 @@ Spotify Floating Player is a lightweight and customizable floating music control
 *Minimalist design with album art display and control functionality.*
 
 ![Spotify Floating Player Menu](sss.png)  
-
+![Sample Wokring GIF](sample.gif)  
 ---
 
 ## **Installation**

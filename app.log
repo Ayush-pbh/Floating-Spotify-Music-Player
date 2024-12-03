@@ -1,4 +1,19 @@
 [i] APP STARTED ✅
+Exception in thread Thread-11 (track_update_thread):
+Traceback (most recent call last):
+  File "/usr/lib/python3.11/threading.py", line 1038, in _bootstrap_inner
+    self.run()
+  File "/usr/lib/python3.11/threading.py", line 975, in run
+    self._target(*self._args, **self._kwargs)
+  File "/home/tripathi/Projects/FloatingSpotify/app.py", line 276, in track_update_thread
+    self.root.after(self._update_interval, lambda: threading.Thread(target=track_update_thread).start())
+  File "/usr/lib/python3.11/tkinter/__init__.py", line 872, in after
+    name = self._register(callit)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/tkinter/__init__.py", line 1584, in _register
+    self.tk.createcommand(name, f)
+RuntimeError: main thread is not in main loop
 [stop]
-Track changed: Zaroor by Aparshakti Khurana
+Track changed: Cheques by Shubh
 Quitting Program
+Error checking track updates: main thread is not in main loop

@@ -23,7 +23,7 @@ Spotify Floating Player is a lightweight and customizable floating music control
 *Minimalist design with album art display and control functionality.*
 
 ![Spotify Floating Player Menu](sss.png)  
-![Sample Wokring GIF](sample.gif)  
+![Sample Working GIF](sample.gif)  
 ---
 
 ## **Installation**
@@ -58,6 +58,13 @@ Spotify Floating Player is a lightweight and customizable floating music control
    ```bash
    python app.py
    ```
+
+### Command-Line Arguments
+You can customize the application using the following command-line arguments:
+- `-s`, `--size`: Set the window size (default: 200).
+  - Example: `python app.py -s 300`
+- `-v`: Run the application in verbose mode.
+  - Example: `python app.py -v`
 
 ---
 

@@ -12,10 +12,16 @@ from dotenv import load_dotenv
 import platform
 import ctypes
 import threading
+import argparse
 load_dotenv()
 # Custom Class Imports
 # from player import Player
 
+# Add this function to parse command-line arguments
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Floating Spotify Application")
+    parser.add_argument('-s', '--size', type=int, default=200, help='Set the window size (default: 200)')
+    return parser.parse_args()
 
 # UI for the application
 class App(threading.Thread):
@@ -42,7 +48,11 @@ class App(threading.Thread):
     current_track = None
     # Track monitoring variables
     _last_track_id = None
-    _update_interval = 1000  # Check every second
+    _update_interval = 500  # Check every second
+
+    def __init__(self, windowSize):
+        super().__init__()
+        self.windowSize = windowSize
 
     def run(self):
         print("[i] APP STARTED ✅")
@@ -306,7 +316,7 @@ class App(threading.Thread):
         self.canvas.itemconfigure(self.canvasCreateImage, image=self.img)
 
     def load_image_from_url(self, url: str) -> (tk.PhotoImage, Image.Image):
-        size = (200, 200)
+        size = (self.windowSize, self.windowSize)
         if not url:
             img = Image.new('RGBA', size or (300, 300), (200, 200, 200, 255))
             return ImageTk.PhotoImage(img), img  # Return both PhotoImage and PIL Image
@@ -345,5 +355,8 @@ class App(threading.Thread):
                             datab = './logo.jpg'
         return io.BytesIO(datab)
 
-app = App()
-app.start()
+# Main execution
+if __name__ == "__main__":
+    args = parse_arguments()  # Parse command-line arguments
+    app = App(windowSize=args.size)  # Pass the window size to the App class
+    app.start()

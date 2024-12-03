@@ -21,6 +21,7 @@ load_dotenv()
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Floating Spotify Application")
     parser.add_argument('-s', '--size', type=int, default=200, help='Set the window size (default: 200)')
+    parser.add_argument('-a', '--alpha', type=int, default=40, help='Set the window transparency (Alpha) (default: 40)')
     return parser.parse_args()
 
 # UI for the application
@@ -50,9 +51,10 @@ class App(threading.Thread):
     _last_track_id = None
     _update_interval = 500  # Check every second
 
-    def __init__(self, windowSize):
+    def __init__(self, windowSize, aplha):
         super().__init__()
         self.windowSize = windowSize
+        self.DEFAULT_ALPHA = aplha/100
 
     def run(self):
         print("[i] APP STARTED ✅")
@@ -358,5 +360,5 @@ class App(threading.Thread):
 # Main execution
 if __name__ == "__main__":
     args = parse_arguments()  # Parse command-line arguments
-    app = App(windowSize=args.size)  # Pass the window size to the App class
+    app = App(windowSize=args.size, aplha=args.alpha)  # Pass the window size to the App class
     app.start()

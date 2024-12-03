@@ -65,6 +65,8 @@ You can customize the application using the following command-line arguments:
   - Example: `python app.py -s 300`
 - `-v`: Run the application in verbose mode.
   - Example: `python app.py -v`
+- `-a`: Set the application's aplha (0 - 100).
+  - Example: `python app.py -a 40`
 
 ---
 

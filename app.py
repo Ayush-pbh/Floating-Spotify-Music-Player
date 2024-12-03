@@ -32,6 +32,10 @@ class App(threading.Thread):
     toSetImg = "./default.jpg"
     voll = 50
     didmovelasttime = False
+    # progress bar
+    progress_bar_height = 4
+    progress_bar_width = 10
+
     # Add default transparency value
     DEFAULT_ALPHA = 0.2  # 50% transparent
     HOVER_ALPHA = 1.0    # 100% opaque on hover
@@ -83,6 +87,24 @@ class App(threading.Thread):
             highlightthickness=0,
         )
         
+        # Load and resize the image and convert it to ImageTk object to use in tkinter
+        self.img, pil_img = self.load_image_from_url(self.current_track['album_art'])
+        # self.img = ImageTk.PhotoImage(Image.open(self.defaultImg).resize(self.resizeTuple))  
+        
+        self.canvasCreateImage = self.canvas.create_image(int(self.windowSize/2), int(self.windowSize/2), image=self.img)
+
+        # Add a more visible green bar at the bottom
+        self.canvas.create_rectangle(
+            0,  # x1 (left)
+            self.windowSize - self.progress_bar_height,  # y1 (15 pixels from bottom)
+            self.progress_bar_width,  # x2 (full width)
+            self.windowSize,  # y2 (bottom)
+            fill="#00FF00",  # Bright green color
+            outline="",  # No outline
+            width=0,
+            tags="top"  # Ensure it stays on top
+        )
+
         # Event Listeners
 
         # Add mouse enter/leave events for transparency
@@ -95,12 +117,6 @@ class App(threading.Thread):
         # Double Left Click to toggle play pause
         self.canvas.bind("<Double-1>", self.spotplayer.toggle_playback)
         self.canvas.pack()
-
-        # Load and resize the image and convert it to ImageTk object to use in tkinter
-        self.img = self.load_image_from_url(self.current_track['album_art'])
-        # self.img = ImageTk.PhotoImage(Image.open(self.defaultImg).resize(self.resizeTuple))  
-        
-        self.canvasCreateImage = self.canvas.create_image(int(self.windowSize/2), int(self.windowSize/2), image=self.img)
 
         # Menu
         self.m = tk.Menu(self.root, tearoff=0)
@@ -129,6 +145,7 @@ class App(threading.Thread):
 
         # Check for track changes
         self.check_track_updates()
+        
         # the mainloop
         self.root.mainloop()
 
@@ -194,12 +211,31 @@ class App(threading.Thread):
 
     def keys(self, event):
         print("Left Working!")
-
+    def get_dominant_color(self, img):
+        """Extract the dominant color from the image."""
+        img = img.convert("RGB")
+        img = img.resize((50, 50))  # Resize for faster processing
+        colors = img.getcolors(50*50)  # Get colors
+        most_frequent_color = max(colors, key=lambda item: item[0])[1]  # Get the most frequent color
+        return f'#{most_frequent_color[0]:02x}{most_frequent_color[1]:02x}{most_frequent_color[2]:02x}'
+    
     def updateWindowUi(self):
-        self.img = self.load_image_from_url(self.current_track['album_art'])    
+        self.img, pil_img = self.load_image_from_url(self.current_track['album_art'])    
         self.canvasCreateImage = self.canvas.create_image(int(self.windowSize/2), int(self.windowSize/2), image=self.img)
         self.canvas.itemconfigure(self.canvasCreateImage, image=self.img)
-    
+        self.canvas.create_rectangle(
+            0,  # x1 (left)
+            self.windowSize - self.progress_bar_height,  # y1 (15 pixels from bottom)
+            self.progress_bar_width,  # x2 (full width)
+            self.windowSize,  # y2 (bottom)
+            fill="#00FF00",  # Keep the color static green
+            outline="",  # No outline
+            width=0,
+            tags="top"  # Ensure it stays on top
+        )
+        # Remove the color changing logic
+        # The progress bar will remain green
+
     def check_track_updates(self):
         """Monitor for track changes and update UI accordingly in a separate thread"""
         def track_update_thread():
@@ -210,6 +246,22 @@ class App(threading.Thread):
                     return
                 
                 current_id = f"{current['artist']}:{current['name']}"
+                
+                # Update the progress bar
+                progress_percent = current['progress'] / current['duration']
+                self.progress_bar_width = int(self.windowSize * progress_percent)
+                
+                # Redraw the green bar to new width
+                self.canvas.create_rectangle(
+                    0,  # x1 (left)
+                    self.windowSize - self.progress_bar_height,  # y1 (15 pixels from bottom)
+                    self.progress_bar_width,  # x2 (full width)
+                    self.windowSize,  # y2 (bottom)
+                    fill="#00FF00",  # Keep the color static green
+                    outline="",  # No outline
+                    width=0,
+                    tags="top"  # Ensure it stays on top
+                )
                 
                 # Detect track change
                 if self._last_track_id != current_id:
@@ -226,7 +278,6 @@ class App(threading.Thread):
         threading.Thread(target=track_update_thread).start()
     
     # Music Control Functions & Helpers
-
     def updateCurrentTrack(self):
         self.current_track = self.spotplayer.get_current_track()
 
@@ -254,19 +305,21 @@ class App(threading.Thread):
         self.img = self.toSetImg
         self.canvas.itemconfigure(self.canvasCreateImage, image=self.img)
 
-    def load_image_from_url(self, url: str) -> tk.PhotoImage:
-        size=(200,200)
+    def load_image_from_url(self, url: str) -> (tk.PhotoImage, Image.Image):
+        size = (200, 200)
         if not url:
-            return ImageTk.PhotoImage(Image.new('RGBA', size or (300, 300), (200, 200, 200, 255)))
-            
+            img = Image.new('RGBA', size or (300, 300), (200, 200, 200, 255))
+            return ImageTk.PhotoImage(img), img  # Return both PhotoImage and PIL Image
+
         try:
             response = requests.get(url, timeout=5)
             img = Image.open(BytesIO(response.content))
             if size:
                 img = img.resize(size, Image.Resampling.LANCZOS)
-            return ImageTk.PhotoImage(img)
+            return ImageTk.PhotoImage(img), img  # Return both PhotoImage and PIL Image
         except:
-            return ImageTk.PhotoImage(Image.new('RGBA', size or (300, 300), (200, 200, 200, 255)))
+            img = Image.new('RGBA', size or (300, 300), (200, 200, 200, 255))
+            return ImageTk.PhotoImage(img), img  # Return both PhotoImage and PIL Image
 
     def getRawImage(self, addr):
         img_name = addr

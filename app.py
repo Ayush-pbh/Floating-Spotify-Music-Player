@@ -9,6 +9,9 @@ import requests
 from io import BytesIO
 import os
 from dotenv import load_dotenv
+import platform
+import ctypes
+import threading
 load_dotenv()
 # Custom Class Imports
 # from player import Player
@@ -30,7 +33,7 @@ class App(threading.Thread):
     voll = 50
     didmovelasttime = False
     # Add default transparency value
-    DEFAULT_ALPHA = 0.8  # 50% transparent
+    DEFAULT_ALPHA = 0.2  # 50% transparent
     HOVER_ALPHA = 1.0    # 100% opaque on hover
     current_track = None
     # Track monitoring variables
@@ -58,8 +61,18 @@ class App(threading.Thread):
         # Set initial transparency
         self.root.attributes('-alpha', self.DEFAULT_ALPHA)
         
+        # Center the window on the screen
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+
+        # Calculate position to center the window
+        x = (screen_width // 2) - (self.windowSize // 2)
+        y = (screen_height // 2) - (self.windowSize // 2)
+
+        # Set the window geometry
+        self.root.geometry(f"{self.windowSize}x{self.windowSize}+{x}+{y}")
+
         # making icon
-        
         self.icon = tk.PhotoImage('./icon.png')
         self.root.iconphoto(False, self.icon)
         # making canvas
@@ -105,6 +118,7 @@ class App(threading.Thread):
         
         # remove window borders
         self.root.overrideredirect(True)  
+        self.ensure_taskbar_visibility()
         self.root.after(10, lambda: self.set_appwindow(self.root))
         
         # making it dragable
@@ -118,7 +132,26 @@ class App(threading.Thread):
         # the mainloop
         self.root.mainloop()
 
-    # Window Movement Conrtols & Helpers
+    # Window Movement Conrtols & Helper
+
+    def ensure_taskbar_visibility(self):
+        os_name = platform.system()
+
+        if os_name == "Windows":
+            # Make it appear in the taskbar
+            hwnd = ctypes.windll.user32.GetParent(self.root.winfo_id())
+            ctypes.windll.user32.SetWindowLongW(hwnd, -8, hwnd)  # Set owner to null
+            self.root.iconify()
+            self.root.update_idletasks()
+            self.root.deiconify()
+
+        elif os_name == "Linux":
+            # Some Linux desktop environments may require setting `_NET_WM_STATE`
+            self.root.attributes("-type", "dialog")  # Adds taskbar visibility on some DEs
+
+        elif os_name == "Darwin":  # MacOS
+            # Use Tkinter's built-in `-fullscreen` attribute for taskbar compatibility
+            self.root.attributes("-fullscreen", False)
     def start_move(self, event):
         self.x = event.x
         self.y = event.y
@@ -168,27 +201,29 @@ class App(threading.Thread):
         self.canvas.itemconfigure(self.canvasCreateImage, image=self.img)
     
     def check_track_updates(self):
-        """Monitor for track changes and update UI accordingly"""
-        try:
-            current = self.spotplayer.get_current_track()
-            if not current:
-                self._last_track_id = None
-                return
-            
-            current_id = f"{current['artist']}:{current['name']}"
-            
-            # Detect track change
-            if self._last_track_id != current_id:
-                print(f"Track changed: {current['name']} by {current['artist']}")
-                self._last_track_id = current_id
-                self.updateCurrentTrack()
-                self.updateWindowUi()
-        except Exception as e:
-            print(f"Error checking track updates: {e}")
-        finally:
-            # Schedule next check
-            self.root.after(self._update_interval, self.check_track_updates)
-    
+        """Monitor for track changes and update UI accordingly in a separate thread"""
+        def track_update_thread():
+            try:
+                current = self.spotplayer.get_current_track()
+                if not current:
+                    self._last_track_id = None
+                    return
+                
+                current_id = f"{current['artist']}:{current['name']}"
+                
+                # Detect track change
+                if self._last_track_id != current_id:
+                    print(f"Track changed: {current['name']} by {current['artist']}")
+                    self._last_track_id = current_id
+                    self.updateCurrentTrack()
+                    self.updateWindowUi()
+            except Exception as e:
+                print(f"Error checking track updates: {e}")
+            finally:
+                # Schedule next check
+                self.root.after(self._update_interval, lambda: threading.Thread(target=track_update_thread).start())
+        # Start the first thread
+        threading.Thread(target=track_update_thread).start()
     
     # Music Control Functions & Helpers
 

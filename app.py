@@ -63,6 +63,10 @@ class App(threading.Thread):
         self.spotplayer = SpotifyController(client_id=os.getenv('CLIENTID'), client_secret=os.getenv('CLIENTSECRET'), redirect_uri=os.getenv('REDIRECTURI'))
 
         self.current_track = self.spotplayer.get_current_track()
+        if self.current_track is None:
+            print("[!] No track is currently playing. Start the spotify app and play a track.")
+            return
+        
         self.main()
 
     def set_appwindow(self, root):
